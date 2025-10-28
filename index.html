@@ -1,222 +1,106 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Building Selector - Energy Data</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f5f7fa;
-      color: #333;
-      padding: 20px;
+<script>
+  let energyData = {};
+
+  const academicOptions = [
+    { value: 'saif', text: 'SAIF' },
+    { value: 'msrc', text: 'MSRC' },
+    { value: 'chemistry block', text: 'Chemistry Block' },
+    { value: 'cryo', text: 'CRYO' },
+    { value: 'bsb', text: 'BSB' },
+    { value: 'structural', text: 'Structural' },
+    { value: 'biotech-1', text: 'Biotech-1' },
+    { value: 'biotech-2', text: 'Biotech-2' },
+    { value: 'ed block', text: 'ED Block' },
+    { value: 'mds', text: 'MDS' },
+    { value: 'cfd', text: 'CFD' },
+    { value: 'nac-i', text: 'NAC-I' },
+    { value: 'nac-ii', text: 'NAC-II' },
+    { value: 'ranganathan building', text: 'Ranganathan Building' },
+    { value: 'central library', text: 'Central Library' },
+    { value: 'doms', text: 'DOMS' }
+  ];
+
+  async function loadExcelData() {
+    try {
+      const response = await fetch('energy.xlsx');
+      if (!response.ok) throw new Error("File not found");
+
+      const arrayBuffer = await response.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+      energyData = {};
+      jsonData.forEach(row => {
+        const name = (row["Building Name"] || row["building name"] || "").toString().trim().toLowerCase();
+        const total = row["Total"] || row["total"] || null;
+        if (name && total) {
+          energyData[name] = total;
+        }
+      });
+
+      console.log("✅ Excel data loaded:", energyData);
+      document.getElementById('loadingMsg').textContent = '✅ Excel data loaded successfully!';
+      document.getElementById('zoneSelect').disabled = false;
+    } catch (error) {
+      console.error('⚠️ Could not load Excel data:', error);
+      document.getElementById('loadingMsg').textContent = '⚠️ Could not load Excel data.';
+    }
+  }
+
+  loadExcelData();
+
+  function handleZoneChange() {
+    const zoneSelect = document.getElementById('zoneSelect');
+    const buildingSelect = document.getElementById('buildingSelect');
+    const zone = zoneSelect.value;
+
+    buildingSelect.innerHTML = '<option value="">-- Select a Building --</option>';
+    buildingSelect.disabled = false;
+
+    if (zone === 'academic') {
+      academicOptions.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.text;
+        buildingSelect.appendChild(option);
+      });
+    } else {
+      buildingSelect.disabled = true;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
+    buildingSelect.onchange = function() {
+      showDetails(this.value);
+    };
+  }
 
-    h1 {
-      font-size: 2rem;
-      color: #0066cc;
-    }
+  function showDetails(buildingKey) {
+    if (!buildingKey) return;
 
-    .container {
-      max-width: 600px;
-      margin: auto;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      padding: 20px;
-    }
+    document.getElementById('homePage').classList.add('hidden');
+    document.getElementById('detailPage').classList.remove('hidden');
+    document.getElementById('buildingName').innerText = buildingKey.toUpperCase();
 
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 10px;
-    }
+    // Robust fuzzy match
+    const keyMatch = Object.keys(energyData).find(
+      k => k.replace(/\s+/g, '').includes(buildingKey.replace(/\s+/g, '').toLowerCase())
+    );
 
-    select {
-      width: 100%;
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      margin-bottom: 20px;
-      font-size: 1rem;
-    }
+    console.log("🔍 Looking for:", buildingKey, "→ matched:", keyMatch);
+    const totalValue = keyMatch ? energyData[keyMatch] : null;
 
-    select:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      background-color: #f5f5f5;
-    }
+    document.getElementById('energyValue').innerText = totalValue
+      ? totalValue.toLocaleString('en-IN') + ' kWh'
+      : '—';
+  }
 
-    .hidden {
-      display: none;
-    }
-
-    .detail-page {
-      text-align: center;
-      padding: 20px;
-    }
-
-    .detail-page h2 {
-      margin-bottom: 15px;
-      color: #004c99;
-    }
-
-    .back-btn {
-      background-color: #999;
-      color: white;
-      padding: 10px 16px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-
-    .back-btn:hover {
-      background-color: #666;
-    }
-
-    .loading {
-      text-align: center;
-      font-weight: bold;
-      color: #0066cc;
-    }
-  </style>
-</head>
-<body>
-
-  <header>
-    <h1>Building Energy Consumption Dashboard</h1>
-  </header>
-
-  <div class="container" id="homePage">
-    <div id="loadingMsg" class="loading">Loading Excel data...</div>
-
-    <label for="zoneSelect">Choose a zone:</label>
-    <select id="zoneSelect" onchange="handleZoneChange()" disabled>
-      <option value="">-- Select a Zone --</option>
-      <option value="hostel">Hostel Zone</option>
-      <option value="academic">Academic Zone</option>
-    </select>
-
-    <label for="buildingSelect">Choose a building:</label>
-    <select id="buildingSelect" disabled>
-      <option value="">-- Select a Building --</option>
-    </select>
-  </div>
-
-  <div class="detail-page hidden" id="detailPage">
-    <h2 id="buildingName"></h2>
-    <p><strong>Total Energy Consumption:</strong> <span id="energyValue">—</span></p>
-    <button class="back-btn" onclick="goBack()">Back</button>
-  </div>
-
-  <script>
-    let energyData = {};
-
-    const academicOptions = [
-      { value: 'saif', text: 'SAIF' },
-      { value: 'msrc', text: 'MSRC' },
-      { value: 'chemistry block', text: 'Chemistry Block' },
-      { value: 'cryo', text: 'CRYO' },
-      { value: 'bsb', text: 'BSB' },
-      { value: 'structural', text: 'Structural' },
-      { value: 'biotech-1', text: 'Biotech-1' },
-      { value: 'biotech-2', text: 'Biotech-2' },
-      { value: 'ed block', text: 'ED Block' },
-      { value: 'mds', text: 'MDS' },
-      { value: 'cfd', text: 'CFD' },
-      { value: 'nac-i', text: 'NAC-I' },
-      { value: 'nac-ii', text: 'NAC-II' },
-      { value: 'ranganathan building', text: 'Ranganathan Building' },
-      { value: 'central library', text: 'Central Library' },
-      { value: 'doms', text: 'DOMS' }
-    ];
-
-    async function loadExcelData() {
-      try {
-        const response = await fetch('energy.xlsx');
-        if (!response.ok) throw new Error("File not found");
-
-        const arrayBuffer = await response.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(sheet);
-
-        energyData = {};
-        jsonData.forEach(row => {
-          const buildingName = (row["Building Name"] || "").toString().trim().toLowerCase();
-          const totalValue = row["Total"] || row["total"] || null;
-          if (buildingName && totalValue) {
-            energyData[buildingName] = totalValue;
-          }
-        });
-
-        console.log("✅ Excel data loaded:", energyData);
-        document.getElementById('loadingMsg').textContent = '✅ Excel data loaded successfully!';
-        document.getElementById('zoneSelect').disabled = false;
-      } catch (error) {
-        console.error('⚠️ Could not load Excel data:', error);
-        document.getElementById('loadingMsg').textContent = '⚠️ Could not load Excel data.';
-      }
-    }
-
-    loadExcelData();
-
-    function handleZoneChange() {
-      const zoneSelect = document.getElementById('zoneSelect');
-      const buildingSelect = document.getElementById('buildingSelect');
-      const zone = zoneSelect.value;
-
-      buildingSelect.innerHTML = '<option value="">-- Select a Building --</option>';
-      buildingSelect.disabled = false;
-
-      if (zone === 'academic') {
-        academicOptions.forEach(opt => {
-          const option = document.createElement('option');
-          option.value = opt.value;
-          option.textContent = opt.text;
-          buildingSelect.appendChild(option);
-        });
-      } else {
-        buildingSelect.disabled = true;
-      }
-
-      buildingSelect.onchange = function() {
-        showDetails(this.value);
-      };
-    }
-
-    function showDetails(buildingKey) {
-      if (!buildingKey) return;
-
-      document.getElementById('homePage').classList.add('hidden');
-      document.getElementById('detailPage').classList.remove('hidden');
-
-      document.getElementById('buildingName').innerText = buildingKey.toUpperCase();
-
-      const keyMatch = Object.keys(energyData).find(
-        k => k === buildingKey.toLowerCase()
-      );
-
-      const totalValue = keyMatch ? energyData[keyMatch].toLocaleString('en-IN') + ' kWh' : '—';
-      document.getElementById('energyValue').innerText = totalValue;
-    }
-
-    function goBack() {
-      document.getElementById('detailPage').classList.add('hidden');
-      document.getElementById('homePage').classList.remove('hidden');
-      document.getElementById('zoneSelect').value = '';
-      document.getElementById('buildingSelect').value = '';
-      document.getElementById('buildingSelect').disabled = true;
-      document.getElementById('buildingSelect').innerHTML = '<option value="">-- Select a Building --</option>';
-    }
-  </script>
-</body>
-</html>
+  function goBack() {
+    document.getElementById('detailPage').classList.add('hidden');
+    document.getElementById('homePage').classList.remove('hidden');
+    document.getElementById('zoneSelect').value = '';
+    document.getElementById('buildingSelect').value = '';
+    document.getElementById('buildingSelect').disabled = true;
+    document.getElementById('buildingSelect').innerHTML = '<option value="">-- Select a Building --</option>';
+  }
+</script>
