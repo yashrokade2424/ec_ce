@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Building Selector - Energy Data</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      padding: 20px;
+    }
+    header { text-align: center; margin-bottom: 30px; }
+    h1 { font-size: 2rem; color: #0066cc; }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    label { display: block; font-weight: 600; margin-bottom: 10px; }
+    select {
+      width: 100%; padding: 10px; border-radius: 8px;
+      border: 1px solid #ccc; margin-bottom: 20px; font-size: 1rem;
+    }
+    select:disabled { opacity: 0.6; cursor: not-allowed; background-color: #f5f5f5; }
+    button {
+      background-color: #0066cc; color: white; padding: 10px 16px;
+      border: none; border-radius: 8px; cursor: pointer;
+    }
+    button:hover { background-color: #004c99; }
+    .hidden { display: none; }
+    .detail-page { text-align: center; padding: 20px; }
+    .detail-page h2 { margin-bottom: 15px; color: #004c99; }
+    .back-btn { background-color: #999; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <header><h1>Building Energy Consumption Dashboard</h1></header>
+
+  <div class="container" id="homePage">
+    <label for="zoneSelect">Choose a zone:</label>
+    <select id="zoneSelect" onchange="handleZoneChange()">
+      <option value="">-- Select a Zone --</option>
+      <option value="hostel">Hostel Zone</option>
+      <option value="academic">Academic Zone</option>
+    </select>
+
+    <label for="buildingSelect">Choose a building:</label>
+    <select id="buildingSelect" disabled>
+      <option value="">-- Select a Building --</option>
+    </select>
+  </div>
+
+  <div class="detail-page hidden" id="detailPage">
+    <h2 id="buildingName"></h2>
+    <p><strong>Total Energy Consumption:</strong> <span id="energyValue">—</span></p>
+    <button class="back-btn" onclick="goBack()">Back</button>
+  </div>
+
+  <script>
+    let energyData = {};
+
+    const hostelOptions = [
+      { value: 'alak', text: 'Alakananda Hostel' },
+      { value: 'yamun', text: 'Yamuna Hostel' },
+      { value: 'mandak', text: 'Mandakini Hostel' },
+      { value: 'gana', text: 'Ganga Hostel' },
+      { value: 'saras', text: 'Saraswati Hostel' },
+      { value: 'godav', text: 'Godavari Hostel1' },
+      { value: 'narma', text: 'Narmada Hostel' },
+      { value: 'tap', text: 'Tapti Hostel' },
+      { value: 'brahma', text: 'Brahmaputra Hostel' },
+      { value: 'pampa', text: 'Pampa Hostel' },
+      { value: 'maha', text: 'Mahanadi Hostel' },
+      { value: 'tampa', text: 'Tamparani Hostel' },
+      { value: 'sindhu', text: 'Sindhu Hostel' },
+      { value: 'krish', text: 'Krishna Hostel' },
+      { value: 'cauv', text: 'Cauvery Hostel' },
+      { value: 'tung', text: 'Tunga Hostel' },
+      { value: 'bhadra', text: 'Bhadra Hostel' },
+      { value: 'sabar', text: 'Sabarmati Hostel' },
+      { value: 'sharav', text: 'Sharavathi Hostel' },
+      { value: 'sarayu', text: 'Sarayu Hostel' },
+      { value: 'swarna', text: 'Swarnamukhi Hostel' }
+    ];
+
+    const academicOptions = [
+      { value: 'saif', text: 'SAIF' },
+      { value: 'msrc', text: 'MSRC' },
+      { value: 'chem', text: 'Chemistry Block' },
+      { value: 'cryo', text: 'CRYO' },
+      { value: 'bsb', text: 'BSB Structural' },
+      { value: 'biotech1', text: 'Biotech-1' },
+      { value: 'biotech2', text: 'Biotech-2' },
+      { value: 'ed', text: 'ED Block' },
+      { value: 'mds', text: 'MDS' },
+      { value: 'cfd', text: 'CFD' },
+      { value: 'nac1', text: 'NAC-I' },
+      { value: 'nac2', text: 'NAC-II' },
+      { value: 'ranga', text: 'Ranganathan Building' },
+      { value: 'library', text: 'Central Library' },
+      { value: 'doms', text: 'DOMS' }
+    ];
+
+    // 🟢 Load Excel data automatically when site loads
+    window.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const response = await fetch('data/energy.xlsx');
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+
+        const sheet = workbook.Sheets['Sheet1'];
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+        jsonData.forEach(row => {
+          const keys = Object.keys(row);
+          const buildingName = row[keys[0]].toString().trim().toLowerCase();
+          const total = row['total'] || row[keys[1]] || '—';
+          energyData[buildingName] = total;
+        });
+
+        console.log('✅ Excel data loaded automatically:', energyData);
+      } catch (err) {
+        console.error('⚠️ Failed to load Excel data:', err);
+        alert('⚠️ Could not load Excel data. Please check that data/energy.xlsx exists.');
+      }
+    });
+
+    function handleZoneChange() {
+      const zone = document.getElementById('zoneSelect').value;
+      const buildingSelect = document.getElementById('buildingSelect');
+      buildingSelect.innerHTML = '<option value="">-- Select a Building --</option>';
+      buildingSelect.disabled = false;
+
+      let options = [];
+      if (zone === 'hostel') options = hostelOptions;
+      else if (zone === 'academic') options = academicOptions;
+      else { buildingSelect.disabled = true; return; }
+
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.text;
+        buildingSelect.appendChild(option);
+      });
+
+      buildingSelect.onchange = () => showDetails(buildingSelect.value);
+    }
+
+    function showDetails(buildingKey) {
+      if (!buildingKey) return;
+      document.getElementById('homePage').classList.add('hidden');
+      document.getElementById('detailPage').classList.remove('hidden');
+
+      const displayName = Object.fromEntries(
+        [...hostelOptions, ...academicOptions].map(o => [o.value, o.text])
+      );
+
+      document.getElementById('buildingName').innerText = displayName[buildingKey] || buildingKey;
+
+      const keyMatch = Object.keys(energyData).find(k =>
+        k.includes(buildingKey) || buildingKey.includes(k)
+      );
+      const totalValue = keyMatch ? energyData[keyMatch] : '—';
+      document.getElementById('energyValue').innerText = totalValue;
+    }
+
+    function goBack() {
+      document.getElementById('detailPage').classList.add('hidden');
+      document.getElementById('homePage').classList.remove('hidden');
+      document.getElementById('zoneSelect').value = '';
+      document.getElementById('buildingSelect').value = '';
+      document.getElementById('buildingSelect').disabled = true;
+      document.getElementById('buildingSelect').innerHTML =
+        '<option value="">-- Select a Building --</option>';
+    }
+  </script>
+</body>
+</html>
