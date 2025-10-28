@@ -2,139 +2,272 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Building Energy Consumption Dashboard</title>
 
-  <!-- ✅ Styles -->
+  <!-- SheetJS for reading Excel -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
+    
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f3f7fb;
+      background-color: #f5f7fa;
       color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-      min-height: 100vh;
-      padding: 30px;
+      padding: 20px;
     }
-    h1 {
-      color: #0056cc;
+
+    header {
+      text-align: center;
       margin-bottom: 30px;
-      font-size: 2rem;
     }
+
+    h1 {
+      font-size: 2rem;
+      color: #0066cc;
+    }
+
     .container {
+      max-width: 600px;
+      margin: auto;
       background: white;
       border-radius: 12px;
-      padding: 30px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      text-align: center;
-      width: 90%;
-      max-width: 500px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      padding: 20px;
     }
+
+    label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
     select {
-      padding: 10px 15px;
+      width: 100%;
+      padding: 10px;
       border-radius: 8px;
       border: 1px solid #ccc;
       margin-bottom: 20px;
-      width: 100%;
-      font-size: 16px;
+      font-size: 1rem;
     }
-    #energyDisplay {
-      font-size: 18px;
-      font-weight: bold;
-      margin-top: 15px;
-      color: #222;
+
+    select:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      background-color: #f5f5f5;
     }
-    .footer {
-      margin-top: 30px;
-      color: gray;
-      font-size: 14px;
+
+    button {
+      background-color: #0066cc;
+      color: white;
+      padding: 10px 16px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
+
+    button:hover {
+      background-color: #004c99;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .detail-page {
+      text-align: center;
+      padding: 20px;
+    }
+
+    .detail-page h2 {
+      margin-bottom: 15px;
+      color: #004c99;
+    }
+
+    .back-btn {
+      background-color: #999;
+      margin-top: 20px;
+    }
+
     .loading {
-      font-size: 16px;
-      color: #555;
+      text-align: center;
+      font-weight: bold;
+      color: #0066cc;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.9rem;
+      color: gray;
     }
   </style>
 </head>
+
 <body>
+  <header>
+    <h1>Building Energy Consumption Dashboard</h1>
+  </header>
 
-  <h1>Building Energy Consumption Dashboard</h1>
+  <!-- Home Page -->
+  <div class="container" id="homePage">
+    <div id="loadingMsg" class="loading">Loading Excel data...</div>
 
-  <div class="container">
-    <p class="loading" id="loading">Loading Excel data...</p>
+    <label for="zoneSelect">Choose a Zone:</label>
+    <select id="zoneSelect" onchange="handleZoneChange()" disabled>
+      <option value="">-- Select a Zone --</option>
+      <option value="hostel">Hostel Zone</option>
+      <option value="academic">Academic Zone</option>
+    </select>
 
-    <select id="buildingDropdown" style="display:none;"></select>
-
-    <p id="energyDisplay"></p>
+    <label for="buildingSelect">Choose a Building:</label>
+    <select id="buildingSelect" disabled>
+      <option value="">-- Select a Building --</option>
+    </select>
   </div>
 
-  <div class="footer">
-    © 2025 Energy Consumption Analysis
+  <!-- Detail Page -->
+  <div class="detail-page hidden" id="detailPage">
+    <h2 id="buildingName"></h2>
+    <p><strong>Total Energy Consumption:</strong> <span id="energyValue">—</span></p>
+    <button class="back-btn" onclick="goBack()">Back</button>
   </div>
 
-  <!-- ✅ Load SheetJS from CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <footer>© 2025 Energy Consumption Dashboard</footer>
 
   <script>
-    async function loadExcel() {
-      try {
-        const response = await fetch('data.xlsx');
-        if (!response.ok) throw new Error('Excel file not found');
+    let energyData = {};
 
+    // --- Building Lists ---
+    const hostelOptions = [
+      { value: 'alak', text: 'Alakananda Hostel' },
+      { value: 'yamun', text: 'Yamuna Hostel' },
+      { value: 'mandak', text: 'Mandakini Hostel' },
+      { value: 'gana', text: 'Ganga Hostel' },
+      { value: 'saras', text: 'Saraswati Hostel' },
+      { value: 'godav', text: 'Godavari Hostel1' },
+      { value: 'narma', text: 'Narmada Hostel' },
+      { value: 'tap', text: 'Tapti Hostel' },
+      { value: 'brahma', text: 'Brahmaputra Hostel' },
+      { value: 'pampa', text: 'Pampa Hostel' },
+      { value: 'maha', text: 'Mahanadi Hostel' },
+      { value: 'tampa', text: 'Tamparani Hostel' },
+      { value: 'sindhu', text: 'Sindhu Hostel' },
+      { value: 'krish', text: 'Krishna Hostel' },
+      { value: 'cauv', text: 'Cauvery Hostel' },
+      { value: 'tung', text: 'Tunga Hostel' },
+      { value: 'bhadra', text: 'Bhadra Hostel' },
+      { value: 'sabar', text: 'Sabarmati Hostel' },
+      { value: 'sharav', text: 'Sharavathi Hostel' },
+      { value: 'sarayu', text: 'Sarayu Hostel' },
+      { value: 'swarna', text: 'Swarnamukhi Hostel' }
+    ];
+
+    const academicOptions = [
+      { value: 'saif', text: 'SAIF' },
+      { value: 'msrc', text: 'MSRC' },
+      { value: 'chem', text: 'Chemistry Block' },
+      { value: 'cryo', text: 'CRYO' },
+      { value: 'bsb', text: 'BSB Structural' },
+      { value: 'biotech1', text: 'Biotech-1' },
+      { value: 'biotech2', text: 'Biotech-2' },
+      { value: 'ed', text: 'ED Block' },
+      { value: 'mds', text: 'MDS' },
+      { value: 'cfd', text: 'CFD' },
+      { value: 'nac1', text: 'NAC-I' },
+      { value: 'nac2', text: 'NAC-II' },
+      { value: 'ranga', text: 'Ranganathan Building' },
+      { value: 'library', text: 'Central Library' },
+      { value: 'doms', text: 'DOMS' }
+    ];
+
+    // --- Load Excel ---
+    async function loadExcelData() {
+      try {
+        const response = await fetch('energy.xlsx');
+        if (!response.ok) throw new Error("Excel file not found");
+        
         const arrayBuffer = await response.arrayBuffer();
         const workbook = XLSX.read(arrayBuffer, { type: 'array' });
         const sheet = workbook.Sheets['Sheet1'];
-        if (!sheet) throw new Error('Sheet1 not found in Excel');
+        const jsonData = XLSX.utils.sheet_to_json(sheet);
 
-        const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-
-        if (jsonData.length === 0) throw new Error('No data found in Sheet1');
-
-        // Hide loading message
-        document.getElementById('loading').style.display = 'none';
-
-        // Populate dropdown
-        const dropdown = document.getElementById('buildingDropdown');
-        dropdown.style.display = 'block';
-        const uniqueBuildings = [...new Set(jsonData.map(row => row['Building']))];
-
-        dropdown.innerHTML = `<option value="">Select a Building</option>`;
-        uniqueBuildings.forEach(building => {
-          const option = document.createElement('option');
-          option.value = building;
-          option.textContent = building;
-          dropdown.appendChild(option);
+        jsonData.forEach(row => {
+          const keys = Object.keys(row);
+          const name = row[keys[0]].toString().trim().toLowerCase();
+          const total = row['total'] || row[keys[1]] || '—';
+          energyData[name] = total;
         });
 
-        // On change event
-        dropdown.addEventListener('change', () => {
-          const selectedBuilding = dropdown.value;
-          const display = document.getElementById('energyDisplay');
-          if (!selectedBuilding) {
-            display.textContent = '';
-            return;
-          }
-          const buildingData = jsonData.find(row => row['Building'] === selectedBuilding);
-          if (buildingData && buildingData['Total']) {
-            display.textContent = `Total Energy Consumption: ${buildingData['Total']}`;
-          } else {
-            display.textContent = 'Data not available for this building.';
-          }
-        });
+        document.getElementById('loadingMsg').textContent = '✅ Data loaded!';
+        document.getElementById('zoneSelect').disabled = false;
 
       } catch (error) {
         console.error(error);
-        document.body.innerHTML = `<h2 style="color:red;">Error: ${error.message}</h2>`;
+        document.getElementById('loadingMsg').textContent = '⚠️ Error loading Excel. Check file name.';
       }
     }
 
-    loadExcel();
+    // --- Populate Building Options ---
+    function handleZoneChange() {
+      const zoneSelect = document.getElementById('zoneSelect');
+      const buildingSelect = document.getElementById('buildingSelect');
+      const zone = zoneSelect.value;
+
+      buildingSelect.innerHTML = '<option value="">-- Select a Building --</option>';
+      buildingSelect.disabled = false;
+
+      let options = [];
+      if (zone === 'hostel') options = hostelOptions;
+      else if (zone === 'academic') options = academicOptions;
+      else {
+        buildingSelect.disabled = true;
+        return;
+      }
+
+      options.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt.value;
+        option.textContent = opt.text;
+        buildingSelect.appendChild(option);
+      });
+
+      buildingSelect.onchange = function() {
+        showDetails(this.value);
+      };
+    }
+
+    // --- Show Details Page ---
+    function showDetails(buildingKey) {
+      if (!buildingKey) return;
+
+      document.getElementById('homePage').classList.add('hidden');
+      document.getElementById('detailPage').classList.remove('hidden');
+
+      const displayName = hostelOptions.concat(academicOptions).find(b => b.value === buildingKey)?.text || buildingKey;
+      document.getElementById('buildingName').innerText = displayName;
+
+      const keyMatch = Object.keys(energyData).find(k => k.includes(buildingKey) || buildingKey.includes(k));
+      const totalValue = keyMatch ? energyData[keyMatch] : '—';
+      document.getElementById('energyValue').innerText = totalValue;
+    }
+
+    // --- Go Back ---
+    function goBack() {
+      document.getElementById('detailPage').classList.add('hidden');
+      document.getElementById('homePage').classList.remove('hidden');
+      document.getElementById('zoneSelect').value = '';
+      document.getElementById('buildingSelect').value = '';
+      document.getElementById('buildingSelect').disabled = true;
+      document.getElementById('buildingSelect').innerHTML = '<option value="">-- Select a Building --</option>';
+    }
+
+    loadExcelData();
   </script>
 </body>
 </html>
