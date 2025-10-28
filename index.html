@@ -1,47 +1,140 @@
-async function loadExcel() {
-  try {
-    const response = await fetch('data.xlsx');
-    if (!response.ok) throw new Error('Excel file not found');
-    
-    const data = await response.arrayBuffer();
-    const workbook = XLSX.read(data, { type: 'array' });
-    const sheet = workbook.Sheets['Sheet1'];
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Building Energy Consumption Dashboard</title>
 
-    if (!sheet) throw new Error('Sheet1 not found');
+  <!-- ✅ Styles -->
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f3f7fb;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 30px;
+    }
+    h1 {
+      color: #0056cc;
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 90%;
+      max-width: 500px;
+    }
+    select {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 20px;
+      width: 100%;
+      font-size: 16px;
+    }
+    #energyDisplay {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 15px;
+      color: #222;
+    }
+    .footer {
+      margin-top: 30px;
+      color: gray;
+      font-size: 14px;
+    }
+    .loading {
+      font-size: 16px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
 
-    const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-    const table = document.getElementById('dataTable');
+  <h1>Building Energy Consumption Dashboard</h1>
 
-    if (jsonData.length === 0) {
-      table.innerHTML = "<tr><td>No data found in Sheet1</td></tr>";
-      return;
+  <div class="container">
+    <p class="loading" id="loading">Loading Excel data...</p>
+
+    <select id="buildingDropdown" style="display:none;"></select>
+
+    <p id="energyDisplay"></p>
+  </div>
+
+  <div class="footer">
+    © 2025 Energy Consumption Analysis
+  </div>
+
+  <!-- ✅ Load SheetJS from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script>
+    async function loadExcel() {
+      try {
+        const response = await fetch('data.xlsx');
+        if (!response.ok) throw new Error('Excel file not found');
+
+        const arrayBuffer = await response.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const sheet = workbook.Sheets['Sheet1'];
+        if (!sheet) throw new Error('Sheet1 not found in Excel');
+
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+
+        if (jsonData.length === 0) throw new Error('No data found in Sheet1');
+
+        // Hide loading message
+        document.getElementById('loading').style.display = 'none';
+
+        // Populate dropdown
+        const dropdown = document.getElementById('buildingDropdown');
+        dropdown.style.display = 'block';
+        const uniqueBuildings = [...new Set(jsonData.map(row => row['Building']))];
+
+        dropdown.innerHTML = `<option value="">Select a Building</option>`;
+        uniqueBuildings.forEach(building => {
+          const option = document.createElement('option');
+          option.value = building;
+          option.textContent = building;
+          dropdown.appendChild(option);
+        });
+
+        // On change event
+        dropdown.addEventListener('change', () => {
+          const selectedBuilding = dropdown.value;
+          const display = document.getElementById('energyDisplay');
+          if (!selectedBuilding) {
+            display.textContent = '';
+            return;
+          }
+          const buildingData = jsonData.find(row => row['Building'] === selectedBuilding);
+          if (buildingData && buildingData['Total']) {
+            display.textContent = `Total Energy Consumption: ${buildingData['Total']}`;
+          } else {
+            display.textContent = 'Data not available for this building.';
+          }
+        });
+
+      } catch (error) {
+        console.error(error);
+        document.body.innerHTML = `<h2 style="color:red;">Error: ${error.message}</h2>`;
+      }
     }
 
-    // Create header
-    const headers = Object.keys(jsonData[0]);
-    const headerRow = document.createElement('tr');
-    headers.forEach(h => {
-      const th = document.createElement('th');
-      th.textContent = h;
-      headerRow.appendChild(th);
-    });
-    table.appendChild(headerRow);
-
-    // Create rows
-    jsonData.forEach(row => {
-      const tr = document.createElement('tr');
-      headers.forEach(h => {
-        const td = document.createElement('td');
-        td.textContent = row[h];
-        tr.appendChild(td);
-      });
-      table.appendChild(tr);
-    });
-
-  } catch (err) {
-    console.error(err);
-    document.body.innerHTML = `<h3 style="color:red;">Error: ${err.message}</h3>`;
-  }
-}
-
-loadExcel();
+    loadExcel();
+  </script>
+</body>
+</html>
