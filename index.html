@@ -11,16 +11,25 @@
     body {
       font-family: "Segoe UI", Arial, sans-serif;
       background-color: #f9fafb;
-      background-image: url("b743b36b-73fc-4caa-ba32-1daa02d7dbb1.png");
+      background-image: url("iitm_logo.png"); /* Replace with your logo file name */
       background-repeat: no-repeat;
       background-position: center;
       background-attachment: fixed;
-      background-size: 420px;
+      background-size: 400px;
       text-align: center;
       margin: 0;
       padding: 0;
       height: 100vh;
       overflow-y: auto;
+    }
+
+    /* Overlay tint for better readability */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 255, 255, 0.75);
+      z-index: -1;
     }
 
     h1 {
@@ -192,7 +201,6 @@
       "Cauvery", "Mahanadhi", "Mandakini", "Pampa", "Tamiraparani"
     ];
 
-    // Show home card after small delay
     window.addEventListener('load', () => {
       setTimeout(() => {
         document.getElementById('homePage').classList.add('show');
