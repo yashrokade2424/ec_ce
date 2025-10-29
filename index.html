@@ -3,44 +3,79 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Building Energy Consumption Dashboard</title>
+  <title>IITM Energy Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
   <style>
+    /* ----------- GENERAL STYLES ----------- */
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f6f8;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background-color: #f9fafb;
+      background-image: url("b743b36b-73fc-4caa-ba32-1daa02d7dbb1.png");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-attachment: fixed;
+      background-size: 420px;
       text-align: center;
       margin: 0;
       padding: 0;
       height: 100vh;
-      overflow-y: scroll;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      overflow-y: auto;
     }
 
     h1 {
-      color: #0066cc;
+      color: #7b1113; /* IITM maroon */
+      font-weight: 700;
+      font-size: 28px;
+      margin-bottom: 20px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
 
+    /* ----------- CARD DESIGN ----------- */
     .container {
-      background: #fff;
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 16px;
       padding: 40px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
       display: none;
       min-width: 360px;
+      max-width: 420px;
+      margin: 100px auto;
+      backdrop-filter: blur(6px);
+      transition: 0.4s ease-in-out;
+      animation: fadeIn 1s ease;
     }
 
     select, button {
       padding: 10px 15px;
       margin: 10px;
       font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      transition: all 0.3s ease;
+    }
+
+    select:focus, button:focus {
+      outline: none;
+      border-color: #7b1113;
+      box-shadow: 0 0 5px rgba(123,17,19,0.5);
+    }
+
+    button {
+      background-color: #7b1113;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #a41b1e;
     }
 
     .result {
       margin-top: 25px;
-      font-size: 18px;
+      font-size: 17px;
+      color: #333;
       font-weight: bold;
     }
 
@@ -49,42 +84,48 @@
       bottom: 10px;
       width: 100%;
       font-size: 14px;
-      color: gray;
+      color: #555;
     }
 
+    /* ----------- DETAIL PAGE ----------- */
     .detail-page {
-      background: #fff;
-      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
       padding: 40px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
       display: none;
       min-width: 360px;
+      max-width: 420px;
+      margin: 100px auto;
+      backdrop-filter: blur(6px);
       animation: fadeIn 0.6s ease;
     }
 
     .detail-item {
       margin: 20px 0;
       text-align: left;
+      font-size: 17px;
     }
 
     .detail-item span {
-      color: #0066cc;
+      color: #7b1113;
       font-weight: bold;
     }
 
     .back-btn {
       margin-top: 25px;
-      background-color: #0066cc;
+      background-color: #7b1113;
       color: white;
       border: none;
       padding: 10px 20px;
       border-radius: 8px;
       cursor: pointer;
       font-size: 16px;
+      transition: 0.3s;
     }
 
     .back-btn:hover {
-      background-color: #004d99;
+      background-color: #a41b1e;
     }
 
     @keyframes fadeIn {
@@ -93,23 +134,25 @@
     }
 
     .show {
-      display: inline-block;
+      display: block;
     }
+
   </style>
 </head>
+
 <body>
   <!-- SELECTION PAGE -->
   <div id="homePage" class="container">
     <h1>Building Energy Consumption Dashboard</h1>
 
-    <label for="typeSelect"><b>Select Type:</b></label>
+    <label for="typeSelect"><b>Select Type:</b></label><br>
     <select id="typeSelect" onchange="updateBuildingOptions()">
       <option value="">-- Choose Type --</option>
       <option value="academic">Academic Building</option>
       <option value="hostel">Hostel</option>
     </select><br>
 
-    <label for="buildingSelect"><b>Select Building:</b></label>
+    <label for="buildingSelect"><b>Select Building:</b></label><br>
     <select id="buildingSelect">
       <option value="">-- Choose a Building --</option>
     </select><br>
@@ -133,10 +176,10 @@
     <button class="back-btn" onclick="goBack()">← Back</button>
   </div>
 
-  <footer>© 2025 Energy Consumption Dashboard</footer>
+  <footer>© 2025 Indian Institute of Technology Madras</footer>
 
   <script>
-    // Lists
+    // Building Lists
     const academicBuildings = [
       "SAIF", "MSRC", "Chemistry Block", "CRYO", "BSB", "Structural",
       "Biotech-1", "Biotech-2", "ED Block", "MDS", "CFD", "NAC-I", "NAC-II",
@@ -149,11 +192,11 @@
       "Cauvery", "Mahanadhi", "Mandakini", "Pampa", "Tamiraparani"
     ];
 
-    // Show the selection card after short delay (for blank start)
+    // Show home card after small delay
     window.addEventListener('load', () => {
       setTimeout(() => {
         document.getElementById('homePage').classList.add('show');
-      }, 800);
+      }, 600);
     });
 
     function updateBuildingOptions() {
@@ -210,12 +253,10 @@
           return;
         }
 
-        // Hide first card and show second
         document.getElementById("homePage").style.display = "none";
         const detailPage = document.getElementById("detailPage");
-        detailPage.style.display = "inline-block";
+        detailPage.style.display = "block";
 
-        // Update details
         document.getElementById("buildingTitle").textContent = building;
         document.getElementById("buildingType").textContent = type.toUpperCase();
         document.getElementById("energyValue").textContent = totalValue.toLocaleString();
@@ -229,7 +270,7 @@
 
     function goBack() {
       document.getElementById("detailPage").style.display = "none";
-      document.getElementById("homePage").style.display = "inline-block";
+      document.getElementById("homePage").style.display = "block";
       document.getElementById("result").innerHTML = "";
     }
   </script>
