@@ -10,24 +10,28 @@
     /* ----------- GENERAL STYLES ----------- */
     body {
       font-family: "Segoe UI", Arial, sans-serif;
-      background-color: #f9fafb;
-      background-image: url("iitm_logo.png"); /* Replace with your logo file name */
+      background-image: url("campus.png"); /* Use your uploaded IITM campus image */
       background-repeat: no-repeat;
+      background-size: cover;
       background-position: center;
       background-attachment: fixed;
-      background-size: 400px;
       text-align: center;
       margin: 0;
       padding: 0;
       height: 100vh;
       overflow-y: auto;
+      color: #222;
+      position: relative;
     }
 
-    /* Overlay tint for better readability */
+    /* Faded overlay for readability */
     body::before {
       content: "";
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: rgba(255, 255, 255, 0.75);
       z-index: -1;
     }
@@ -145,7 +149,6 @@
     .show {
       display: block;
     }
-
   </style>
 </head>
 
@@ -188,7 +191,6 @@
   <footer>© 2025 Indian Institute of Technology Madras</footer>
 
   <script>
-    // Building Lists
     const academicBuildings = [
       "SAIF", "MSRC", "Chemistry Block", "CRYO", "BSB", "Structural",
       "Biotech-1", "Biotech-2", "ED Block", "MDS", "CFD", "NAC-I", "NAC-II",
