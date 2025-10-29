@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Building Energy Dashboard</title>
+  <title>Building Energy Consumption Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
     body {
@@ -11,54 +11,67 @@
       background-color: #f4f6f8;
       text-align: center;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+      height: 100vh;
+      overflow-y: scroll;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
+
     h1 {
       color: #0066cc;
     }
+
     .container {
-      margin-top: 40px;
       background: #fff;
       border-radius: 12px;
-      padding: 30px;
+      padding: 40px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      display: inline-block;
-      min-width: 340px;
+      display: none;
+      min-width: 360px;
     }
+
     select, button {
       padding: 10px 15px;
       margin: 10px;
       font-size: 16px;
     }
+
     .result {
       margin-top: 25px;
       font-size: 18px;
       font-weight: bold;
     }
+
     footer {
-      margin-top: 40px;
+      position: fixed;
+      bottom: 10px;
+      width: 100%;
       font-size: 14px;
       color: gray;
     }
-    .hidden { display: none; }
 
-    /* Detail Page Styling */
     .detail-page {
       background: #fff;
       border-radius: 12px;
-      padding: 30px;
+      padding: 40px;
       box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-      display: inline-block;
-      min-width: 340px;
+      display: none;
+      min-width: 360px;
+      animation: fadeIn 0.6s ease;
     }
+
     .detail-item {
       margin: 20px 0;
       text-align: left;
     }
+
     .detail-item span {
       color: #0066cc;
       font-weight: bold;
     }
+
     .back-btn {
       margin-top: 25px;
       background-color: #0066cc;
@@ -69,35 +82,44 @@
       cursor: pointer;
       font-size: 16px;
     }
+
     .back-btn:hover {
       background-color: #004d99;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .show {
+      display: inline-block;
     }
   </style>
 </head>
 <body>
-  <!-- PAGE 1 -->
+  <!-- SELECTION PAGE -->
   <div id="homePage" class="container">
     <h1>Building Energy Consumption Dashboard</h1>
+
     <label for="typeSelect"><b>Select Type:</b></label>
     <select id="typeSelect" onchange="updateBuildingOptions()">
       <option value="">-- Choose Type --</option>
       <option value="academic">Academic Building</option>
       <option value="hostel">Hostel</option>
-    </select>
-    <br>
+    </select><br>
 
     <label for="buildingSelect"><b>Select Building:</b></label>
     <select id="buildingSelect">
       <option value="">-- Choose a Building --</option>
-    </select>
-    <br>
+    </select><br>
 
     <button onclick="loadEnergy()">Show Total</button>
     <div class="result" id="result"></div>
   </div>
 
-  <!-- PAGE 2 -->
-  <div id="detailPage" class="detail-page hidden">
+  <!-- RESULT PAGE -->
+  <div id="detailPage" class="detail-page">
     <h1 id="buildingTitle"></h1>
     <div class="detail-item">
       <span>Type:</span> <span id="buildingType"></span>
@@ -114,6 +136,7 @@
   <footer>© 2025 Energy Consumption Dashboard</footer>
 
   <script>
+    // Lists
     const academicBuildings = [
       "SAIF", "MSRC", "Chemistry Block", "CRYO", "BSB", "Structural",
       "Biotech-1", "Biotech-2", "ED Block", "MDS", "CFD", "NAC-I", "NAC-II",
@@ -126,11 +149,17 @@
       "Cauvery", "Mahanadhi", "Mandakini", "Pampa", "Tamiraparani"
     ];
 
+    // Show the selection card after short delay (for blank start)
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('homePage').classList.add('show');
+      }, 800);
+    });
+
     function updateBuildingOptions() {
       const type = document.getElementById("typeSelect").value;
       const select = document.getElementById("buildingSelect");
       select.innerHTML = '<option value="">-- Choose a Building --</option>';
-
       const list = type === "hostel" ? hostelBuildings : (type === "academic" ? academicBuildings : []);
       list.forEach(name => {
         const opt = document.createElement("option");
@@ -181,11 +210,12 @@
           return;
         }
 
-        // Switch to next page
-        document.getElementById("homePage").classList.add("hidden");
-        document.getElementById("detailPage").classList.remove("hidden");
+        // Hide first card and show second
+        document.getElementById("homePage").style.display = "none";
+        const detailPage = document.getElementById("detailPage");
+        detailPage.style.display = "inline-block";
 
-        // Update detail page content
+        // Update details
         document.getElementById("buildingTitle").textContent = building;
         document.getElementById("buildingType").textContent = type.toUpperCase();
         document.getElementById("energyValue").textContent = totalValue.toLocaleString();
@@ -198,8 +228,8 @@
     }
 
     function goBack() {
-      document.getElementById("detailPage").classList.add("hidden");
-      document.getElementById("homePage").classList.remove("hidden");
+      document.getElementById("detailPage").style.display = "none";
+      document.getElementById("homePage").style.display = "inline-block";
       document.getElementById("result").innerHTML = "";
     }
   </script>
