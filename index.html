@@ -10,7 +10,7 @@
     /* ----------- GENERAL STYLES ----------- */
     body {
       font-family: "Segoe UI", Arial, sans-serif;
-      background-image: url("photo_NAC.png"); /* Use your IITM campus image */
+      background-image: url("photo_NAC.png");
       background-repeat: no-repeat;
       background-size: cover;
       background-position: center;
@@ -22,9 +22,12 @@
       overflow-y: auto;
       color: #222;
       position: relative;
+
+      /* Enhanced clarity and brightness */
+      filter: brightness(1.18) contrast(1.08) saturate(1.1);
     }
 
-    /* Faded overlay (increased background intensity by 10%) */
+    /* Add soft overlay for readability */
     body::before {
       content: "";
       position: fixed;
@@ -32,7 +35,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(255, 255, 255, 0.65); /* previously 0.75 */
+      background: rgba(255, 255, 255, 0.6);
       z-index: -1;
     }
 
@@ -41,7 +44,7 @@
       font-weight: 700;
       font-size: 28px;
       margin-bottom: 20px;
-      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
     }
 
     /* ----------- CARD DESIGN ----------- */
@@ -49,12 +52,12 @@
       background: rgba(255, 255, 255, 0.9);
       border-radius: 16px;
       padding: 40px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
       display: none;
       min-width: 360px;
       max-width: 420px;
       margin: 100px auto;
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(8px);
       transition: 0.4s ease-in-out;
       animation: fadeIn 1s ease;
     }
@@ -97,7 +100,8 @@
       bottom: 10px;
       width: 100%;
       font-size: 14px;
-      color: #555;
+      color: #333;
+      text-shadow: 1px 1px 2px rgba(255,255,255,0.6);
     }
 
     /* ----------- DETAIL PAGE ----------- */
