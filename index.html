@@ -40,7 +40,6 @@
   <h1>Building Energy Consumption Dashboard</h1>
 
   <div class="container">
-    <!-- Step 1: Select type -->
     <label for="typeSelect"><b>Select Type:</b></label>
     <select id="typeSelect" onchange="updateBuildingOptions()">
       <option value="">-- Choose Type --</option>
@@ -48,7 +47,6 @@
       <option value="hostel">Hostel</option>
     </select>
 
-    <!-- Step 2: Select building -->
     <label for="buildingSelect"><b>Select Building:</b></label>
     <select id="buildingSelect">
       <option value="">-- Choose a Building --</option>
@@ -62,7 +60,6 @@
   <footer>© 2025 Energy Consumption Dashboard</footer>
 
   <script>
-    // Academic and Hostel building lists
     const academicBuildings = [
       "SAIF", "MSRC", "Chemistry Block", "CRYO", "BSB", "Structural",
       "Biotech-1", "Biotech-2", "ED Block", "MDS", "CFD", "NAC-I", "NAC-II",
@@ -75,7 +72,6 @@
       "Cauvery", "Mahanadhi", "Mandakini", "Pampa", "Tamiraparani"
     ];
 
-    // Dynamically update building dropdown
     function updateBuildingOptions() {
       const type = document.getElementById("typeSelect").value;
       const select = document.getElementById("buildingSelect");
@@ -90,7 +86,6 @@
       });
     }
 
-    // Main function to read Excel and display total
     async function loadEnergy() {
       const type = document.getElementById('typeSelect').value;
       const building = document.getElementById('buildingSelect').value;
@@ -118,16 +113,18 @@
         const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
         let found = false;
-        for (let i = 3; i < jsonData.length; i++) {
+        for (let i = 0; i < jsonData.length; i++) {
           const row = jsonData[i];
-          const buildingName = row[1];
-          const totalValue = row[14]; // Column O
+          if (!row || row.length < 15) continue; // skip empty rows
 
-          if (buildingName && buildingName.trim().toLowerCase() === building.trim().toLowerCase()) {
+          const buildingName = row[1]; // Column B
+          const totalValue = row[14];  // Column O
+
+          if (buildingName && buildingName.toString().trim().toLowerCase() === building.trim().toLowerCase()) {
             resultDiv.innerHTML = `
               <span style="color:#0066cc;">Total Energy Consumption for 
               <b>${buildingName}</b> (${type.toUpperCase()}):</span> 
-              ${totalValue.toLocaleString()} kWh`;
+              ${totalValue ? totalValue.toLocaleString() : "N/A"} kWh`;
             found = true;
             break;
           }
@@ -145,3 +142,4 @@
   </script>
 </body>
 </html>
+
