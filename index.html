@@ -10,7 +10,7 @@
     /* ----------- GENERAL STYLES ----------- */
     body {
       font-family: "Segoe UI", Arial, sans-serif;
-      background-image: url("photo_NAC.png"); /* Use your uploaded IITM campus image */
+      background-image: url("photo_NAC.png"); /* Use your IITM campus image */
       background-repeat: no-repeat;
       background-size: cover;
       background-position: center;
@@ -24,7 +24,7 @@
       position: relative;
     }
 
-    /* Faded overlay for readability */
+    /* Faded overlay (increased background intensity by 10%) */
     body::before {
       content: "";
       position: fixed;
@@ -32,7 +32,7 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: rgba(255, 255, 255, 0.75);
+      background: rgba(255, 255, 255, 0.65); /* previously 0.75 */
       z-index: -1;
     }
 
